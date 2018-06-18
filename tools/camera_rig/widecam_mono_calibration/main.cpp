@@ -41,6 +41,12 @@ static unsigned int g_calibrationObjWidth = 9;      // 9 squares in width
 static unsigned int g_calibrationObjHeight = 7;     // 7 squares in height
 static float g_calibrationObjSquareSize = 0.100f;    // chessboard square size in meters = 100mm
 
+
+
+
+#define CV_TERMCRIT_ITER    1  
+#define CV_TERMCRIT_NUMBER  CV_TERMCRIT_ITER  
+#define CV_TERMCRIT_EPS     2  
 static void ShowHelp()
 {
     std::cout << endl <<
@@ -194,7 +200,7 @@ int Calibrate(const char* pathToImages, const char* pathToResults)
             return -1;
         }
 
-        cvtColor(frame, grayFrame, CV_RGB2GRAY);
+        cvtColor(frame, grayFrame, cv::COLOR_RGB2GRAY);
         bool frameCornersFound = FindCalibrationPattern(grayFrame, patternSize, frameCorners);
         if (frameCornersFound)
         {
