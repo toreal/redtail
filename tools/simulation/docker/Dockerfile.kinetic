@@ -62,7 +62,7 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
     # Make GCC 5 default
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5 \
     # pip
-    && pip install --upgrade pip \
+    ##&& pip install --upgrade pip \
     && pip install setuptools \
     # coveralls code coverage reporting
     && pip install cpp-coveralls \

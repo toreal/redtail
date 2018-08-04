@@ -29,6 +29,8 @@ PX4Controller::PX4Controller()
 bool PX4Controller::Drone::init(ros::NodeHandle& nh)
 {
     is_initialized_ = true;
+ //   bnavi = false;
+
     return true;
 }
 
@@ -160,6 +162,59 @@ void PX4Controller::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg
     }
 }
 
+ void PX4Controller::keyCallback(const keyboard::Key::ConstPtr& msg)
+ {
+
+    ROS_INFO("key");
+
+      ROS_INFO("%d", msg->code);
+
+    linear_control_val_   = 0;
+    angular_control_val_  = 0;
+    altitude_control_val_ = 0;
+    yaw_control_val_      = 0;
+    
+
+
+switch(msg->code)
+{
+  case 97:
+  ROS_INFO("A");
+  linear_control_val_ =1;
+  break;
+  case 100:
+  linear_control_val_ =-1;
+  ROS_INFO("D");
+  break;
+  
+  case 119:
+  angular_control_val_ =1;
+  ROS_INFO("W");
+  break;
+  case 115:
+  angular_control_val_ =-1;
+  ROS_INFO("S");
+  break;
+  
+  case 101:
+  bnavi = true;
+  wpind=0;
+  ROS_INFO("E");
+  break;
+
+
+}
+    if(linear_control_val_ != 0 || angular_control_val_ != 0 || yaw_control_val_ != 0 || altitude_control_val_ != 0)
+    {
+        ROS_INFO("joy controls: lin=%f, ang=%f, yaw=%f, alt=%f, use_dnn=%d",
+                 linear_control_val_, angular_control_val_, yaw_control_val_, altitude_control_val_, use_dnn_data_);
+    }
+
+    timeof_last_joy_command_ = ros::Time::now();
+    got_new_joy_command_ = true;
+    use_dnn_data_ = false;
+
+ }
 void PX4Controller::joystickCallback(const sensor_msgs::Joy::ConstPtr& msg)
 {
     float mov_stick_updown = msg->axes[joystick_linear_axis_];
@@ -492,6 +547,15 @@ bool PX4Controller::init(ros::NodeHandle& nh)
         ROS_INFO("Subscribed to /joy topic (joystick)");
     }
 
+
+// Subscribe to a JOY (joystick) node if available
+    key_sub_ = nh.subscribe<keyboard::Key>("/keyboard/keydown", command_queue_size_, &PX4Controller::keyCallback, this);
+    if(key_sub_)
+    {
+        ROS_INFO("Subscribed to /keyboard topic (keyboard)");
+    }
+
+
     // Subscribe to a higher level DNN based planner (if available)
     dnn_sub_ = nh.subscribe<sensor_msgs::Image>("/trails_dnn/network/output", command_queue_size_, &PX4Controller::dnnCallback, this);
     if(dnn_sub_)
@@ -711,6 +775,58 @@ void PX4Controller::spin()
         // Get latest state and control inputs. 
         current_pose = current_pose_; // current_pose_ is updated elsewhere, use its fixed time value for computations
 
+            if (bnavi)
+            {
+                int wpcount =5;
+
+                        int wpx[5]={0,2,2,2,0};
+                        int wpy[5]={0,0,-2,2,0};
+
+                     if ( wpind < wpcount)
+                     {
+
+                   //float  dis = getPoseDistance(current_pose, wp);
+                    geometry_msgs::PoseStamped np=current_pose;
+
+                    float dx = wpx[wpind] - np.pose.position.x;
+                    float dy = wpy[wpind] - np.pose.position.y;
+                    float dis= sqrt(dx*dx+dy*dy);
+
+                    ROS_INFO("ind: %d ,dis: %4.2f dx: %4.2f dy: %4.2f  ",wpind, dis , dx,dy);
+                    if ( abs(dis) <  1.0f )
+                    {
+                        if (wpind <(wpcount -1) )
+                        {
+                            wpind ++;
+
+                        }else
+                        {
+
+                        bnavi =false;
+                        ROS_INFO("stop  %f ++++++++++++++++++++++++", dis);
+                        }
+
+                    }else
+                    {
+                  
+                    linear_control_val_ = dx/ dis;
+                    angular_control_val_ = dy/ dis;
+                    yaw_control_val_=0;
+                    altitude_control_val_=0;
+                    got_new_joy_command_=true;
+                    ROS_INFO(" distance: %4.2f x: %4.2f y: %4.2f , speed %4.2f ", dis , linear_control_val_,angular_control_val_, linear_speed_);
+
+                    }
+
+                     }
+
+
+            }
+
+
+
+
+
         switch (controller_state_)
         {
         case ControllerState::Armed:
@@ -790,6 +906,8 @@ void PX4Controller::spin()
                 }
             }
 
+
+
             // Log
             ROS_DEBUG("NAVC: st=%d, l=%2.2f, a=%2.2f, y=%2.2f, alt=%2.2f",
                       (int)controller_state_, linear_control_val, angular_control_val,
@@ -829,8 +947,16 @@ void PX4Controller::spin()
                 {
                     is_moving_ = true;
 
-                    // Compute next waypoint based on current commands
-                    geometry_msgs::Point next_waypoint = computeNextWaypoint(current_pose, linear_control_val,
+                    if (bnavi)
+                    {
+                        goto_pose.pose.position.x = current_pose.pose.position.x+linear_control_val*linear_speed_;
+                        goto_pose.pose.position.y = current_pose.pose.position.y+angular_control_val*linear_speed_;
+                        goto_pose.pose.position.z =altitude_;
+
+                    }else
+                    {
+
+                        geometry_msgs::Point next_waypoint = computeNextWaypoint(current_pose, linear_control_val,
                                                                              angular_control_val, linear_speed_);
                     next_waypoint.z = altitude_; // need to set Z so it holds the set altitude
                     goto_pose.pose.position = next_waypoint;
@@ -840,6 +966,11 @@ void PX4Controller::spin()
                     {
                         goto_pose.pose.orientation = getRotationTo(current_pose.pose.position, next_waypoint);
                     }
+
+                    }
+
+                    // Compute next waypoint based on current commands
+                    
                 }
             }
 
@@ -857,7 +988,7 @@ void PX4Controller::spin()
         tf::quaternionMsgToEigen(goto_pose.pose.orientation, orientation_quaternion);
         rotation_matrix = orientation_quaternion.toRotationMatrix();
         euler_angles = rotation_matrix.eulerAngles(0, 1, 2);
-        ROS_DEBUG("NAVGOTO: %4.2f, %4.2f, %4.2f, Att: %4.2f, %4.2f, %4.2f, SetAlt: %4.2f",
+        ROS_INFO("NAVGOTO: %4.2f, %4.2f, %4.2f, Att: %4.2f, %4.2f, %4.2f, SetAlt: %4.2f",
                   goto_pose.pose.position.x, goto_pose.pose.position.y, goto_pose.pose.position.z,
                   angles::to_degrees(euler_angles[0]), angles::to_degrees(euler_angles[1]), angles::to_degrees(euler_angles[2]),
                   altitude_);
