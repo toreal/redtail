@@ -1,0 +1,3 @@
+/home/nvidia/ssd/source/redtail/tools/camera_rig/widecam_mono_calibration/CMakeFiles/edit_cache.dir
+/home/nvidia/ssd/source/redtail/tools/camera_rig/widecam_mono_calibration/CMakeFiles/rebuild_cache.dir
+/home/nvidia/ssd/source/redtail/tools/camera_rig/widecam_mono_calibration/CMakeFiles/widecam_mono_calibration.dir

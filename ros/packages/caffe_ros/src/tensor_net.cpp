@@ -309,13 +309,13 @@ cv::Mat preprocessImage(cv::Mat img, int dst_img_w, int dst_img_h, InputFormat i
     {
         // Convert image from RGB to BGR format used by OpenCV if needed.
         if (encoding == "rgb8")
-            cv::cvtColor(img, img, CV_RGB2BGR);
+            cv::cvtColor(img, img, cv::COLOR_RGB2BGR);
     }
     else if (inp_fmt == InputFormat::RGB)
     {
         // Input image in OpenCV BGR, convert to RGB.
         if (encoding == "bgr8")
-            cv::cvtColor(img, img, CV_BGR2RGB);
+            cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
     }
     //ROS_INFO("Dims: (%zu, %zu) -> (%zu, %zu)", w, h, (size_t)dst_img_w, (size_t)dst_img_h);
     // Convert to floating point type.
