@@ -775,7 +775,7 @@ void PX4Controller::spin()
         switch (controller_state_)
         {
         case ControllerState::Armed:
-            ROS_INFO("Armed mode.");
+            ROS_INFO("Armed mode."); 
             goto_pose.pose.position.z += takeoff_altitude_gain_;
             controller_state_ = ControllerState::Takeoff;
             ROS_INFO("Switching to Takeoff...");

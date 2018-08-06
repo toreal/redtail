@@ -116,7 +116,7 @@ private:
         Armed,
         Takeoff,
         Navigating
-    };
+    }; 
 
     bool parseArguments(const ros::NodeHandle& nh);
     bool setJoystickParams(std::string joy_type);
