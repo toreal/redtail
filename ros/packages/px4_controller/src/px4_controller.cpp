@@ -162,59 +162,8 @@ void PX4Controller::poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg
     }
 }
 
- void PX4Controller::keyCallback(const keyboard::Key::ConstPtr& msg)
- {
-
-    ROS_INFO("key");
-
-      ROS_INFO("%d", msg->code);
-
-    linear_control_val_   = 0;
-    angular_control_val_  = 0;
-    altitude_control_val_ = 0;
-    yaw_control_val_      = 0;
-    
 
 
-switch(msg->code)
-{
-  case 97:
-  ROS_INFO("A");
-  linear_control_val_ =1;
-  break;
-  case 100:
-  linear_control_val_ =-1;
-  ROS_INFO("D");
-  break;
-  
-  case 119:
-  angular_control_val_ =1;
-  ROS_INFO("W");
-  break;
-  case 115:
-  angular_control_val_ =-1;
-  ROS_INFO("S");
-  break;
-  
-  case 101:
-  bnavi = true;
-  wpind=0;
-  ROS_INFO("E");
-  break;
-
-
-}
-    if(linear_control_val_ != 0 || angular_control_val_ != 0 || yaw_control_val_ != 0 || altitude_control_val_ != 0)
-    {
-        ROS_INFO("joy controls: lin=%f, ang=%f, yaw=%f, alt=%f, use_dnn=%d",
-                 linear_control_val_, angular_control_val_, yaw_control_val_, altitude_control_val_, use_dnn_data_);
-    }
-
-    timeof_last_joy_command_ = ros::Time::now();
-    got_new_joy_command_ = true;
-    use_dnn_data_ = false;
-
- }
 void PX4Controller::joystickCallback(const sensor_msgs::Joy::ConstPtr& msg)
 {
     float mov_stick_updown = msg->axes[joystick_linear_axis_];
@@ -549,11 +498,7 @@ bool PX4Controller::init(ros::NodeHandle& nh)
 
 
 // Subscribe to a JOY (joystick) node if available
-    key_sub_ = nh.subscribe<keyboard::Key>("/keyboard/keydown", command_queue_size_, &PX4Controller::keyCallback, this);
-    if(key_sub_)
-    {
-        ROS_INFO("Subscribed to /keyboard topic (keyboard)");
-    }
+    
 
 
     // Subscribe to a higher level DNN based planner (if available)
@@ -841,6 +786,9 @@ void PX4Controller::spin()
             ROS_INFO("Takeoff mode. Distance to end point = %f", distance);
             if (distance <= position_tolerance_)
             {
+
+                bnavi = true;
+                wpind = 0;
                 controller_state_ = ControllerState::Navigating;
                 is_moving_ = true;
                 altitude_ = current_pose.pose.position.z;

@@ -16,7 +16,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/Joy.h>
-#include <keyboard/Key.h>
+//##include <keyboard/Key.h>
 #include <sensor_msgs/Image.h>
 
 #include <mavros_msgs/CommandBool.h>
@@ -52,7 +52,7 @@ public:
     void px4StateCallback(const mavros_msgs::State::ConstPtr &msg);
     void poseCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
     void joystickCallback(const sensor_msgs::Joy::ConstPtr& msg);
-    void keyCallback(const keyboard::Key::ConstPtr& msg);
+    //void keyCallback(const keyboard::Key::ConstPtr& msg);
     void dnnCallback(const sensor_msgs::Image::ConstPtr& msg);
     void objDnnCallback(const sensor_msgs::Image::ConstPtr& msg);
 
@@ -200,7 +200,7 @@ private:
     ros::Subscriber joy_sub_;
     ros::Subscriber dnn_sub_;
     ros::Subscriber objdnn_sub_;
-    ros::Subscriber key_sub_;
+ //   ros::Subscriber key_sub_;
 };
 
 }
